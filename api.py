@@ -42,6 +42,8 @@ async def recibir_facturas(
     # 2. ENCOLAR LA TAREA
     # Convertimos los objetos Pydantic a diccionarios para enviarlos a Celery.
     datos_para_celery = [f.model_dump(mode='json') for f in facturas]
+
+    # delay por detras envia a redis
     procesar_lote_facturas.delay(datos_para_celery)
 
     return {"status": "OK", "detail": f"{len(facturas)} facturas recibidas y encoladas para procesamiento."}
