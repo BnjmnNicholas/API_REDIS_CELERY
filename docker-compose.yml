@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  # Servicio 1: El broker de mensajes
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  # Servicio 2: La API de FastAPI
+  api:
+    build: .  # Construye la imagen usando el Dockerfile de esta carpeta
+    ports:
+      - "8000:8000"
+    environment:
+      # Variable de entorno para que la API sepa dónde está Redis
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis # Le dice a Docker que inicie Redis antes que la API
+    command: uvicorn api:app --host 0.0.0.0 --port 8000
+
+  # Servicio 3: El Worker de Celery
+  worker:
+    build: . # Usa la misma imagen que la API, ya que comparten el mismo código y dependencias
+    environment:
+      # El Worker también necesita saber dónde está Redis
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis # El Worker también debe esperar a que Redis esté listo
+    command: celery -A worker.app worker --loglevel=INFO
